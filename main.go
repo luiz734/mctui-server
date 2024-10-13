@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"log"
 	"mctui-server/app"
+	"mctui-server/backup"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -71,6 +73,11 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/command", commandHandler)
 	mux.HandleFunc("/login", app.LoginHandler)
+	envUser := os.Getenv("USER")
+	worldDir := fmt.Sprintf("/home/%s/tmp/minecraft-server/world", envUser)
+	backupDir := fmt.Sprintf("/home/%s/tmp/backups", envUser)
+	backup.Dirs = backup.NewDirectories(worldDir, backupDir)
+	mux.HandleFunc("/backup", backup.BackupHandler)
 
 	server := http.Server{
 		Addr:      addr,
