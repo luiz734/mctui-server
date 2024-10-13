@@ -77,7 +77,8 @@ func main() {
 	worldDir := fmt.Sprintf("/home/%s/tmp/minecraft-server/world", envUser)
 	backupDir := fmt.Sprintf("/home/%s/tmp/backups", envUser)
 	backup.Dirs = backup.NewDirectories(worldDir, backupDir)
-	mux.HandleFunc("/backup", backup.BackupHandler)
+	mux.HandleFunc("/backup", backup.MakeBackupHandler)
+	mux.HandleFunc("/backups", backup.BackupHandler)
 
 	server := http.Server{
 		Addr:      addr,

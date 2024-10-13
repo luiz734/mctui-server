@@ -1,11 +1,14 @@
 package backup
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/mholt/archiver/v3"
@@ -69,7 +72,7 @@ func (d directories) MakeBackup() error {
 	// Remove the uncompressed dir
 	err = os.RemoveAll(backupPath)
 	if err != nil {
-        panic(err)
+		panic(err)
 	}
 	log.Printf("removing dir %s", backupPath)
 	log.Printf("backup complete")
@@ -77,9 +80,59 @@ func (d directories) MakeBackup() error {
 	return nil
 }
 
-type Backup struct {}
-
-func BackupHandler(w http.ResponseWriter, r *http.Request) {
+func MakeBackupHandler(w http.ResponseWriter, r *http.Request) {
 	Dirs.MakeBackup()
 	fmt.Fprintf(w, "Done")
+}
+
+func BackupHandler(w http.ResponseWriter, r *http.Request) {
+	backups, err := Dirs.LoadBackups()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	var backupNames []string
+	for _, b := range backups {
+		backupNames = append(backupNames, b.Name)
+	}
+	json.NewEncoder(w).Encode(backupNames)
+}
+
+type Backup struct {
+	Time time.Time
+	Name string
+}
+
+func (d directories) LoadBackups() ([]Backup, error) {
+	var backups []Backup
+
+	files, err := os.ReadDir(d.manual)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+
+		name := file.Name()
+		if strings.HasPrefix(name, "backup-") && strings.HasSuffix(name, ".zip") {
+			timestamp := name[len("backup-") : len(name)-len(".zip")] // extract time part
+			t, err := time.Parse("2006-01-02-15-04-05", timestamp)
+			if err != nil {
+				continue // skip invalid formats
+			}
+			backups = append(backups, Backup{Time: t, Name: name})
+		}
+	}
+
+	// Sort backups by time
+	sort.Slice(backups, func(i, j int) bool {
+		return backups[i].Time.Before(backups[j].Time)
+	})
+
+	return backups, nil
 }
