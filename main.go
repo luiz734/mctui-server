@@ -19,10 +19,30 @@ var (
 	KeyFilePath  = "cert/key.pem"
 )
 
+// protected
 func commandHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprint(w, "Missing authorization header")
+		return
+	}
+	tokenString = tokenString[len("Bearer "):]
+
+	err := app.VerifyToken(tokenString)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprint(w, "Invalid token")
+		return
+	}
+
+	// User authenticated
+
 	var cmd Command
 	// Decode the JSON body
-	err := json.NewDecoder(r.Body).Decode(&cmd)
+	err = json.NewDecoder(r.Body).Decode(&cmd)
 	if err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
@@ -50,6 +70,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/command", commandHandler)
+	mux.HandleFunc("/login", app.LoginHandler)
 
 	server := http.Server{
 		Addr:      addr,
