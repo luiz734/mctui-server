@@ -45,7 +45,7 @@ func NewDirectories(savesPath, manualPath string) directories {
 }
 
 func (d directories) MakeBackup() error {
-	now := time.Now().Format("2006-01-02-15-04-05")
+	now := time.Now().UTC().Format("2006-01-02-15-04-05")
 	dirName := fmt.Sprintf("backup-%s", now)
 	zipName := fmt.Sprintf("%s.zip", dirName)
 
@@ -131,7 +131,7 @@ func (d directories) LoadBackups() ([]Backup, error) {
 
 	// Sort backups by time
 	sort.Slice(backups, func(i, j int) bool {
-		return backups[i].Time.Before(backups[j].Time)
+		return backups[i].Time.After(backups[j].Time)
 	})
 
 	return backups, nil
