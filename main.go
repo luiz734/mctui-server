@@ -79,6 +79,7 @@ func main() {
 	backup.Dirs = backup.NewDirectories(worldDir, backupDir)
 	mux.HandleFunc("/backup", backup.MakeBackupHandler)
 	mux.HandleFunc("/backups", backup.BackupHandler)
+	mux.HandleFunc("/restore", backup.RestoreHandler)
 
 	server := http.Server{
 		Addr:      addr,
