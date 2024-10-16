@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/mholt/archiver/v3"
-	cp "github.com/otiai10/copy"
+	// cp "github.com/otiai10/copy"
 )
 
 func checkDirExists(path string) bool {
@@ -71,7 +71,7 @@ func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-		log.Printf("remove file %s", backupAfterPath)
+		log.Printf("removed file %s", backupAfterPath)
 	}
 
 	// Unarchive the backup in the saves dir
@@ -88,32 +88,35 @@ func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-		log.Printf("remove file %s", backupAfterPath)
+		log.Printf("remove file %s", oldSavePath)
 	}
 
 	// Good. Now we can recreate an empty dir there
-	err = os.Mkdir(oldSavePath, os.ModePerm)
-	if err != nil {
-		panic(err.Error())
-	}
-	log.Printf("created dir %d", oldSavePath)
+	// err = os.Mkdir(oldSavePath, os.ModePerm)
+	// if err != nil {
+	// 	panic(err.Error())
+	// }
+	// log.Printf("created dir %s", oldSavePath)
 
 	// Option to replace destination
 	// This is not working as expected for some reason
 	// Manually removing the dir in the code above
-	var opts = cp.Options{
-		OnDirExists: func(src, dest string) cp.DirExistsAction {
-			return cp.Replace
-		},
-	}
-	err = cp.Copy(currentSavePath, oldSavePath, opts)
+	// var opts = cp.Options{
+	// 	OnDirExists: func(src, dest string) cp.DirExistsAction {
+	// 		return cp.Replace
+	// 	},
+	// }
+	// err = cp.Copy(currentSavePath, oldSavePath, opts)
+    // Rename "world" to "old"
+	err = os.Rename(currentSavePath, oldSavePath)
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("copied %s to %s", currentSavePath, oldSavePath)
+	log.Printf("renamed %s to %s", currentSavePath, oldSavePath)
 
 	// Rename brand new backup to "world"
-	err = cp.Copy(backupAfterPath, currentSavePath)
+	// err = cp.Copy(backupBeforePath, currentSavePath, opts)
+    err = os.Rename(backupAfterPath, currentSavePath)
 	if err != nil {
 		panic(err)
 	}
