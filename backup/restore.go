@@ -1,6 +1,7 @@
 package backup
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -21,60 +22,85 @@ func checkDirExists(path string) bool {
 	return true
 }
 
+type RestoreRequest struct {
+    Filename string `json:filename`
+}
+
 func RestoreHandler(w http.ResponseWriter, r *http.Request) {
-	serverDir := path.Dir(Dirs.saves)
-	backupBaseName := "backup-2024-10-13-21-54-21.zip"
-	backupName := strings.TrimSuffix(backupBaseName, filepath.Ext(backupBaseName))
-	backupPath := path.Join(Dirs.manual, backupBaseName)
-	// Filename is not necessary. Only dir
-	restoreDir := path.Join(serverDir, "")
-	restorePath := path.Join(restoreDir, backupName)
-	currentSavePath := Dirs.saves
-	oldSavePath := path.Join(serverDir, "old")
-
-	// oldWorldPath := "old"
-	// newWorldPath := "world"
-
-	// check backups exists
-
+	// User provides the backup filename
 	var err error
-    // Remove a dir named the same as the backup
-    // Unlikelly to happen. Happens a lot while debbuging tho
-	if checkDirExists(restorePath) {
-		err = os.RemoveAll(restorePath)
+	var rr RestoreRequest
+	err = json.NewDecoder(r.Body).Decode(&rr)
+	if err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	/*
+		        These variables can be confuse
+		        Here are some examples to help
+
+		        server is the server root
+		        backups is where you store the backups
+
+		        fileBackupZip       back123.zip
+		        fileBackup          back123
+
+				serverRootPath      /server
+				currentSavePath     /server/world
+				oldSavePath         /server/old
+				backupBeforePath    /server/back123
+				backupAfterPath     /backups/back123.zip
+	*/
+
+	// File names
+	fileBackupZip := rr.Filename
+	fileBackup := strings.TrimSuffix(fileBackupZip, filepath.Ext(fileBackupZip))
+
+	// Directories
+	serverRootPath := path.Dir(Dirs.saves)
+	currentSavePath := Dirs.saves
+	oldSavePath := path.Join(serverRootPath, "old")
+	backupAfterPath := path.Join(serverRootPath, fileBackup)
+	backupBeforePath := path.Join(Dirs.manual, fileBackupZip)
+
+	// Remove a dir named the same as the backup
+	// Unlikelly to happen. Happens a lot while debbuging tho
+	if checkDirExists(backupAfterPath) {
+		err = os.RemoveAll(backupAfterPath)
 		if err != nil {
 			panic(err)
 		}
-		log.Printf("remove file %s", restorePath)
+		log.Printf("remove file %s", backupAfterPath)
 	}
 
-    // Unarchive the backup in the saves dir
-	err = archiver.Unarchive(backupPath, restoreDir)
+	// Unarchive the backup in the saves dir
+	err = archiver.Unarchive(backupBeforePath, serverRootPath)
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("unarchived file %s to %s", backupPath, restoreDir)
+	log.Printf("unarchived file %s to %s", backupBeforePath, serverRootPath)
 
-    // Remove any dir called "old" in saves dir
-    // Workaround until debug (see bellow)
+	// Remove any dir called "old" in saves dir
+	// Workaround until debug (see bellow)
 	if checkDirExists(oldSavePath) {
 		err = os.RemoveAll(oldSavePath)
 		if err != nil {
 			panic(err)
 		}
-		log.Printf("remove file %s", restorePath)
+		log.Printf("remove file %s", backupAfterPath)
 	}
-    
-    // Good. Now we can recreate an empty dir there
+
+	// Good. Now we can recreate an empty dir there
 	err = os.Mkdir(oldSavePath, os.ModePerm)
 	if err != nil {
 		panic(err.Error())
 	}
 	log.Printf("created dir %d", oldSavePath)
 
-    // Option to replace destination
-    // This is not working as expected for some reason
-    // Manually removing the dir in the code above
+	// Option to replace destination
+	// This is not working as expected for some reason
+	// Manually removing the dir in the code above
 	var opts = cp.Options{
 		OnDirExists: func(src, dest string) cp.DirExistsAction {
 			return cp.Replace
@@ -87,14 +113,14 @@ func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("copied %s to %s", currentSavePath, oldSavePath)
 
 	// Rename brand new backup to "world"
-	err = cp.Copy(restorePath, currentSavePath)
+	err = cp.Copy(backupAfterPath, currentSavePath)
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("renamed %s to %s", restorePath, currentSavePath)
+	log.Printf("renamed %s to %s", backupAfterPath, currentSavePath)
 
-    // We don't remove "old"
-    // Can be usefull to undo the last backup
+	// We don't remove "old"
+	// Can be usefull to undo the last backup
 	log.Printf("restore completed")
 
 }
