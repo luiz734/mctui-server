@@ -9,13 +9,15 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+var EXPIRATION_TIME_SEC = 3600
+
 var secretKey = []byte("very-secure-key")
 
 func createToken(username string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
 			"username": username,
-			"exp":      time.Now().Add(time.Second * 20).Unix(),
+			"exp":      time.Now().Add(time.Second * time.Duration(EXPIRATION_TIME_SEC)).Unix(),
 		})
 
 	tokenString, err := token.SignedString(secretKey)
