@@ -1,0 +1,16 @@
+[Unit]
+Description=Minecraft Server
+After=network.target
+
+[Service]
+Nice=1
+KillMode=none
+SuccessExitStatus=0 1
+NoNewPrivileges=true
+WorkingDirectory=/home/tohru/tmp/minecraft-server
+ExecStart=java -Xmx1024M -Xms1024M -jar "/home/tohru/tmp/minecraft-server/server.jar" nogui
+ExecStop=mcrcon -H 127.0.0.1 -P 25575 -p minecraft save-all stop
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

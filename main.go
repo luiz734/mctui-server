@@ -106,7 +106,8 @@ func main() {
 	mux.HandleFunc("/command", authMiddleware(commandHandler))
 	mux.HandleFunc("/backup", authMiddleware(backup.MakeBackupHandler))
 	mux.HandleFunc("/backups", authMiddleware(backup.BackupHandler))
-	mux.HandleFunc("/restore", authMiddleware(backup.RestoreHandler))
+	// mux.HandleFunc("/restore", authMiddleware(backup.RestoreHandler))
+	mux.HandleFunc("/restore", backup.RestoreHandler)
 
 	// Public routes
 	mux.HandleFunc("/login", app.LoginHandler)
