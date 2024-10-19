@@ -43,12 +43,13 @@ func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 	// saveAndWait()
 	// Close the server
 	// stopAndWait()
-    // Save the world and close the server
+	// Save the world and close the server
 	systemdStop()
 	// Restore the backup
 	restoreBackup(rr.Filename)
 	// Starts the server again
 	// startServer()
+	systemdStart()
 
 	w.Write([]byte("Backup restored!"))
 }

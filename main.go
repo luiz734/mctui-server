@@ -84,6 +84,10 @@ func commandHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	if status, _ := backup.SystemdStatus(); status != backup.Active {
+		log.Fatalf("minecraft service not running")
+	}
+
 	serverTLSCert, err := tls.LoadX509KeyPair(CertFilePath, KeyFilePath)
 	if err != nil {
 		log.Fatalf("Error loading certificate and key file: %v", err)

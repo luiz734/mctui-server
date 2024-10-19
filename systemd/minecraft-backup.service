@@ -1,0 +1,5 @@
+[Unit]
+Description=Backup script
+
+[Service]
+ExecStart=/home/ubuntu/scripts/minecraft-backup.sh
