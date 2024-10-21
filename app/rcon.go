@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/gorcon/rcon"
 )
@@ -14,6 +15,7 @@ func AskRconServer(command string) string {
 	defer conn.Close()
 
 	response, err := conn.Execute(command)
+	log.Printf("Send command to rcon: %s", command)
 	if err != nil {
 		return fmt.Sprintf("%s", err.Error())
 	}

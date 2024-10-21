@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"mctui-server/app"
 	"mctui-server/backup"
@@ -32,7 +33,6 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		tokenString = tokenString[len("Bearer "):]
 
-		// Assuming `app.VerifyToken` is your token verification function
 		err := app.VerifyToken(tokenString)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -84,6 +84,20 @@ func commandHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	// Setup log
+	if len(os.Getenv("DEBUG")) > 0 {
+		f, err := os.OpenFile("debug.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			log.Fatalf("error opening file: %v", err)
+		}
+		defer f.Close()
+
+		log.SetOutput(f)
+	} else {
+		_ = io.Discard
+		// log.SetOutput(io.Discard)
+	}
+
 	if status, _ := backup.SystemdStatus(); status != backup.Active {
 		log.Fatalf("minecraft service not running")
 	}

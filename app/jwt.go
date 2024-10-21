@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -32,13 +33,22 @@ func VerifyToken(tokenString string) error {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return secretKey, nil
 	})
-
 	if err != nil {
 		return err
 	}
 
 	if !token.Valid {
+		log.Printf("Invalid jwt token")
 		return fmt.Errorf("invalid token")
+	}
+
+	// Extract claims if token is valid
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		if username, ok := claims["username"].(string); ok {
+			log.Printf("Authenticated user %s using jwt", username)
+			return nil
+		}
+		return fmt.Errorf("Missing claims")
 	}
 
 	return nil
@@ -54,10 +64,11 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	var u User
 	json.NewDecoder(r.Body).Decode(&u)
-	fmt.Printf("The user request value %v", u)
+	log.Printf("User %s attempt to login", u.Username)
 
 	if u.Username == "admin" && u.Password == "1234" {
 		tokenString, err := createToken(u.Username)
+		log.Printf("Creating token for user %s", u.Username)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Errorf("No username found")
@@ -65,8 +76,9 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, tokenString)
 		return
-	} else {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprint(w, "Invalid credentials")
 	}
+
+	w.WriteHeader(http.StatusUnauthorized)
+	fmt.Fprint(w, "Invalid credentials")
+	log.Printf("Invalid credentials for user %s", u.Username)
 }
