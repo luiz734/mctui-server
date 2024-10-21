@@ -50,7 +50,7 @@ func systemdStop() {
 		log.Fatalf("failed to connect to systemd: %v", err)
 	}
 	defer conn.Close()
-	log.Printf("connected to dbus")
+	log.Printf("Connected to dbus")
 
 	// Stop the service
 	service := "minecraft.service"
@@ -58,14 +58,14 @@ func systemdStop() {
 	if err != nil {
 		log.Fatalf("failed to stop service: %v", err)
 	}
-	log.Printf("stop result: %s", stopRes)
+	log.Printf("Stop result: %d", stopRes)
 
 	// Wait for the service to reach the "active" state (it should be active after a successful restart)
 	targetState := "inactive"
 	if err := waitForServiceState(conn, service, targetState); err != nil {
 		log.Fatalf("Error waiting for service to become active: %v", err)
 	}
-	log.Printf("service has restarted successfully and is now inactive.")
+	log.Printf("Service has restarted successfully and is now inactive")
 }
 
 func SystemdStatus() (ServiceState, error) {
@@ -75,7 +75,7 @@ func SystemdStatus() (ServiceState, error) {
 		log.Fatalf("Failed to connect to systemd: %v", err)
 	}
 	defer conn.Close()
-	log.Printf("connected to dbus")
+	log.Printf("Connected to dbus")
 
 	service := "minecraft.service"
 	props, err := conn.GetUnitPropertiesContext(context, service)

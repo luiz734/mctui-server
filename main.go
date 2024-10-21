@@ -19,11 +19,6 @@ type Command struct {
 	Command string `json:"command"`
 }
 
-var (
-	CertFilePath = "cert/cert.pem"
-	KeyFilePath  = "cert/key.pem"
-)
-
 func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenString := r.Header.Get("Authorization")
@@ -115,7 +110,7 @@ func main() {
 		log.Fatalf("minecraft service not running")
 	}
 
-	serverTLSCert, err := tls.LoadX509KeyPair(CertFilePath, KeyFilePath)
+	serverTLSCert, err := tls.LoadX509KeyPair(env.GetTlsCert(), env.GetTlsKey())
 	if err != nil {
 		log.Fatalf("Error loading certificate and key file: %v", err)
 	}
@@ -137,8 +132,8 @@ func main() {
 	mux.HandleFunc("/command", authMiddleware(commandHandler))
 	mux.HandleFunc("/backup", authMiddleware(backup.MakeBackupHandler))
 	mux.HandleFunc("/backups", authMiddleware(backup.BackupHandler))
-	// mux.HandleFunc("/restore", authMiddleware(backup.RestoreHandler))
-	mux.HandleFunc("/restore", backup.RestoreHandler)
+	mux.HandleFunc("/restore", authMiddleware(backup.RestoreHandler))
+	// mux.HandleFunc("/restore", backup.RestoreHandler)
 
 	// Public routes
 	mux.HandleFunc("/login", app.LoginHandler)
