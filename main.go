@@ -8,6 +8,7 @@ import (
 	"log"
 	"mctui-server/app"
 	"mctui-server/backup"
+	"mctui-server/env"
 	"net/http"
 	"os"
 	"strings"
@@ -33,7 +34,8 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		tokenString = tokenString[len("Bearer "):]
 
-		err := app.VerifyToken(tokenString)
+		secretKey := env.GetJwtSecret()
+		err := app.VerifyToken(secretKey, tokenString)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprint(w, "Invalid token")
@@ -84,6 +86,9 @@ func commandHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	// Check if there are missing environment variables
+	env.CheckRequiredVariables()
+
 	// Setup log
 	if len(os.Getenv("DEBUG")) > 0 {
 		f, err := os.OpenFile("debug.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"mctui-server/env"
 	"net/http"
 	"time"
 
@@ -12,9 +13,7 @@ import (
 
 var EXPIRATION_TIME_SEC = 3600
 
-var secretKey = []byte("very-secure-key")
-
-func createToken(username string) (string, error) {
+func createToken(secretKey []byte, username string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
 			"username": username,
@@ -29,7 +28,7 @@ func createToken(username string) (string, error) {
 	return tokenString, nil
 }
 
-func VerifyToken(tokenString string) error {
+func VerifyToken(secretKey []byte, tokenString string) error {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return secretKey, nil
 	})
@@ -67,11 +66,13 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("User %s attempt to login", u.Username)
 
 	if u.Username == "admin" && u.Password == "1234" {
-		tokenString, err := createToken(u.Username)
+		secretKey := env.GetJwtSecret()
+		tokenString, err := createToken(secretKey, u.Username)
 		log.Printf("Creating token for user %s", u.Username)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Errorf("No username found")
+			return
 		}
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, tokenString)
