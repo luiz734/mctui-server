@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"mctui-server/db"
 	"mctui-server/env"
 	"net/http"
 	"time"
@@ -65,7 +66,12 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&u)
 	log.Printf("User %s attempt to login", u.Username)
 
-	if u.Username == "admin" && u.Password == "1234" {
+	match, err := db.CheckCredentials(u.Username, u.Password)
+	if err != nil {
+		log.Panicf("%v", err)
+	}
+	if match {
+		// if u.Username == "admin" && u.Password == "1234" {
 		secretKey := env.GetJwtSecret()
 		tokenString, err := createToken(secretKey, u.Username)
 		log.Printf("Creating token for user %s", u.Username)

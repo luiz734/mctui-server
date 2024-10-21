@@ -1,3 +1,4 @@
 cert/
 debug.log
+database.db
 .envrc

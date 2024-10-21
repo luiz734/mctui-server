@@ -8,6 +8,7 @@ import (
 	"log"
 	"mctui-server/app"
 	"mctui-server/backup"
+	"mctui-server/db"
 	"mctui-server/env"
 	"net/http"
 	"os"
@@ -85,11 +86,7 @@ func commandHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, app.AskRconServer(cmd.Command))
 }
 
-func main() {
-	// Check if there are missing environment variables
-	env.CheckRequiredVariables()
-
-	// Setup log
+func setupLogs() {
 	if len(os.Getenv("DEBUG")) > 0 {
 		f, err := os.OpenFile("debug.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
@@ -102,6 +99,17 @@ func main() {
 		_ = io.Discard
 		// log.SetOutput(io.Discard)
 	}
+}
+
+func main() {
+	// Setup logs
+    setupLogs()
+
+	// Check if there are missing environment variables
+	env.CheckRequiredVariables()
+
+	// Setup database
+	db.SetupDatabase()
 
 	if status, _ := backup.SystemdStatus(); status != backup.Active {
 		log.Fatalf("minecraft service not running")
