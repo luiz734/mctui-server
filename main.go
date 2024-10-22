@@ -87,23 +87,12 @@ func main() {
 	// Check if there are missing environment variables
 	env.CheckRequiredVariables()
 
-	// Check for subcommands
-	ctx := kong.Parse(&subcommands.Args)
-	switch ctx.Command() {
-	case "add-user":
-		log.Printf("Subcommand add-user")
-		username := subcommands.Args.AddUser.Username
-		password := subcommands.Args.AddUser.Password
-		if err := db.AddUser(username, password); err != nil {
-			log.Fatalf("Error adding user: %v", err)
-		}
+	// Quit if a subcommand exists
+	if processSubcommands() {
 		return
-    default:
-        // Without any arg
-        // Also matches "dumb"
-        log.Printf("No subcommand found")
 	}
 
+	// No subcommands. Let's run the server
 	// Check for server.jar and other directories/files
 	if err := env.CheckRequiredFiles(); err != nil {
 		log.Fatalf("Can't setup: %v", err)
@@ -153,4 +142,35 @@ func main() {
 	log.Printf("Listen on port %d", port)
 	server.ListenAndServeTLS("", "")
 	http.ListenAndServe(addr, nil)
+}
+
+func processSubcommands() (processed bool) {
+	var err error
+	ctx := kong.Parse(&subcommands.Args)
+	switch ctx.Command() {
+	case "add-user":
+		log.Printf("Subcommand add-user")
+		username := subcommands.Args.AddUser.Username
+		password := subcommands.Args.AddUser.Password
+		if err = db.AddUser(username, password); err != nil {
+			log.Fatalf("Error adding user: %v", err)
+		}
+		return true
+	case "list":
+		log.Printf("Subcommand list")
+		var usernames []string
+		if usernames, err = db.GetAllUsernames(); err != nil {
+			log.Fatal("Error listing users: %v", err)
+		}
+		for _, u := range usernames {
+			fmt.Printf("%s\n", u)
+		}
+		return true
+
+	// Without any arg
+	// Also matches "dumb"
+	default:
+		log.Printf("No subcommand found")
+	}
+	return false
 }

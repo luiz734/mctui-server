@@ -113,6 +113,35 @@ func AddUser(username, password string) error {
 	return nil
 }
 
+func GetAllUsernames() ([]string, error) {
+	var usernames []string
+	// Opens database
+	db, err := sql.Open("sqlite3", env.GetDatabaseFile())
+	if err != nil {
+		return usernames, fmt.Errorf("can't open database file: %w", err)
+	}
+	defer db.Close()
+
+	// Query usernames
+	rows, err := db.Query("SELECT username FROM users")
+	if err != nil {
+		return nil, fmt.Errorf("error querying database: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var username string
+		if err := rows.Scan(&username); err != nil {
+			return nil, fmt.Errorf("can't scan row: %w", err)
+		}
+		usernames = append(usernames, username)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return usernames, nil
+}
+
 // Hash the password
 func hashPassword(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
