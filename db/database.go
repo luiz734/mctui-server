@@ -7,6 +7,7 @@ import (
 	env "mctui-server/environment"
 
 	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -53,7 +54,7 @@ func CheckCredentials(username, password string) (bool, error) {
 		return false, err
 	}
 
-	if password == hashedPassword {
+	if checkPassword(password, hashedPassword) {
 		log.Printf("Credentials of user %s match", username)
 		return true, nil
 	}
@@ -88,4 +89,38 @@ func createUserTable(db *sql.DB) error {
 
 	_, err := db.Exec(create)
 	return err
+}
+
+func AddUser(username, password string) error {
+	var err error
+	var hashedPassword string
+	if hashedPassword, err = hashPassword(password); err != nil {
+		return fmt.Errorf("error hashing password: %w", err)
+	}
+	// Opens database
+	db, err := sql.Open("sqlite3", env.GetDatabaseFile())
+	if err != nil {
+		return fmt.Errorf("can't open database file: %w", err)
+	}
+	defer db.Close()
+	// Insert user
+	query := `INSERT INTO users (username, password) VALUES (?, ?)`
+	_, err = db.Exec(query, username, hashedPassword)
+	if err != nil {
+		return err
+	}
+	log.Printf("User added successfully")
+	return nil
+}
+
+// Hash the password
+func hashPassword(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(hash), err
+}
+
+// Check the password using the hash (salt is extracted from the hash)
+func checkPassword(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
 }

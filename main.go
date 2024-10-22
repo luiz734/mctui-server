@@ -10,9 +10,12 @@ import (
 	"mctui-server/backup"
 	"mctui-server/db"
 	env "mctui-server/environment"
+	"mctui-server/subcommands"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/alecthomas/kong"
 )
 
 type Command struct {
@@ -83,6 +86,23 @@ func main() {
 
 	// Check if there are missing environment variables
 	env.CheckRequiredVariables()
+
+	// Check for subcommands
+	ctx := kong.Parse(&subcommands.Args)
+	switch ctx.Command() {
+	case "add-user":
+		log.Printf("Subcommand add-user")
+		username := subcommands.Args.AddUser.Username
+		password := subcommands.Args.AddUser.Password
+		if err := db.AddUser(username, password); err != nil {
+			log.Fatalf("Error adding user: %v", err)
+		}
+		return
+    default:
+        // Without any arg
+        // Also matches "dumb"
+        log.Printf("No subcommand found")
+	}
 
 	// Check for server.jar and other directories/files
 	if err := env.CheckRequiredFiles(); err != nil {
