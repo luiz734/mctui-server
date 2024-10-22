@@ -24,4 +24,5 @@ require (
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/sys v0.4.0 // indirect
+	gopkg.in/ini.v1 v1.67.0 // indirect
 )

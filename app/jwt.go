@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"mctui-server/db"
-	"mctui-server/env"
+	env "mctui-server/environment"
 	"net/http"
 	"time"
 

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"mctui-server/env"
+	env "mctui-server/environment"
 
 	_ "github.com/mattn/go-sqlite3"
 )

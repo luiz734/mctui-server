@@ -9,7 +9,7 @@ import (
 	"mctui-server/app"
 	"mctui-server/backup"
 	"mctui-server/db"
-	"mctui-server/env"
+	env "mctui-server/environment"
 	"net/http"
 	"os"
 	"strings"
@@ -45,25 +45,6 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 // protected
 func commandHandler(w http.ResponseWriter, r *http.Request) {
-	// w.Header().Set("Content-Type", "application/json")
-	//
-	// tokenString := r.Header.Get("Authorization")
-	// if tokenString == "" {
-	// 	w.WriteHeader(http.StatusUnauthorized)
-	// 	fmt.Fprint(w, "Missing authorization header")
-	// 	return
-	// }
-	// tokenString = tokenString[len("Bearer "):]
-	//
-	// err := app.VerifyToken(tokenString)
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusUnauthorized)
-	// 	fmt.Fprint(w, "Invalid token")
-	// 	return
-	// }
-
-	// User authenticated
-
 	var cmd Command
 	var err error
 	// Decode the JSON body
@@ -98,10 +79,15 @@ func setupLogs() {
 
 func main() {
 	// Setup logs
-    setupLogs()
+	setupLogs()
 
 	// Check if there are missing environment variables
 	env.CheckRequiredVariables()
+
+	// Check for server.jar and other directories/files
+	if err := env.CheckRequiredFiles(); err != nil {
+		log.Fatalf("Can't setup: %v", err)
+	}
 
 	// Setup database
 	db.SetupDatabase()
@@ -121,9 +107,8 @@ func main() {
 	port := 8090
 	addr := fmt.Sprintf(":%d", port)
 
-	envUser := os.Getenv("USER")
-	worldDir := fmt.Sprintf("/home/%s/tmp/minecraft-server/world", envUser)
-	backupDir := fmt.Sprintf("/home/%s/tmp/backups", envUser)
+	worldDir := env.GetWorldDir()
+	backupDir := env.GetBackupDir()
 	backup.Dirs = backup.NewDirectories(worldDir, backupDir)
 
 	mux := http.NewServeMux()
