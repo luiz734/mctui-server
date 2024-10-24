@@ -46,7 +46,13 @@ func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 	// Save the world and close the server
 	systemdStop()
 	// Restore the backup
-	restoreBackup(rr.Filename)
+	if err = restoreBackup(rr.Filename); err != nil {
+		log.Printf("Error restoring backup: %v", err)
+		log.Printf("User IP: %s", r.RemoteAddr)
+		http.Error(w, "Forbidden action. IP logged.", http.StatusForbidden)
+		defer systemdStart()
+		return
+	}
 	// Starts the server again
 	// startServer()
 	systemdStart()
@@ -81,7 +87,15 @@ type RestoreRequest struct {
 	Filename string `json:filename`
 }
 
-func restoreBackup(backupName string) {
+type badFilenameError struct {
+	message string
+}
+
+func (e *badFilenameError) Error() string {
+	return fmt.Sprintf("invalid filename: %s", e.message)
+}
+
+func restoreBackup(backupName string) error {
 	/*
 		        These variables can be confuse
 		        Here are some examples to help
@@ -110,6 +124,14 @@ func restoreBackup(backupName string) {
 	oldSavePath := path.Join(serverRootPath, "old")
 	backupAfterPath := path.Join(serverRootPath, fileBackup)
 	backupBeforePath := path.Join(Dirs.manual, fileBackupZip)
+
+	// Check for directory traversal
+	// E.g filename like ../../../something
+	absPath, err := filepath.Abs(backupBeforePath)
+	log.Printf("%s %s", absPath, Dirs.manual)
+	if !strings.HasPrefix(absPath, Dirs.manual) {
+		return &badFilenameError{"directory traversal attempt detected!"}
+	}
 
 	// Remove a dir named the same as the backup
 	// Unlikelly to happen. Happens a lot while debbuging tho
@@ -156,4 +178,6 @@ func restoreBackup(backupName string) {
 	// We don't remove "old"
 	// Can be usefull to undo the last backup
 	log.Printf("Restore completed")
+
+	return nil
 }
