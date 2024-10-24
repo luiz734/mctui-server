@@ -31,16 +31,20 @@ func GetRconPassword() string {
 func GetRconAddress() string {
 	return os.Getenv("RCON_ADDRESS")
 }
+func GetPort() string {
+	return os.Getenv("PORT")
+}
 
 func CheckRequiredVariables() {
 	vars := []string{
+        "PORT",
 		"JWT_SECRET",
 		"DB_FILE",
 		"TLS_CERT_FILE",
 		"TLS_KEY_FILE",
 		"WORLD_DIR",
 		"BACKUP_DIR",
-        "RCON_PASSWORD",
+		"RCON_PASSWORD",
 	}
 	for _, v := range vars {
 		if os.Getenv(v) == "" {

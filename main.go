@@ -65,24 +65,28 @@ func commandHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, app.AskRconServer(cmd.Command))
 }
 
-func setupLogs() {
+func setupLogs() *os.File {
+	var f *os.File
+	var err error
 	if len(os.Getenv("DEBUG")) > 0 {
-		f, err := os.OpenFile("debug.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		f, err = os.OpenFile("debug.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
 			log.Fatalf("error opening file: %v", err)
 		}
-		defer f.Close()
 
 		log.SetOutput(f)
+		log.Printf("Set log output to file %s", "debug.log")
 	} else {
 		_ = io.Discard
 		// log.SetOutput(io.Discard)
 	}
+	return f
 }
 
 func main() {
 	// Setup logs
-	setupLogs()
+	logOutputFile := setupLogs()
+	defer logOutputFile.Close()
 
 	// Check if there are missing environment variables
 	env.CheckRequiredVariables()
@@ -102,7 +106,7 @@ func main() {
 	db.SetupDatabase()
 
 	if status, _ := backup.SystemdStatus(); status != backup.Active {
-		log.Fatalf("minecraft service not running")
+		log.Fatalf("Minecraft service not running")
 	}
 
 	serverTLSCert, err := tls.LoadX509KeyPair(env.GetTlsCert(), env.GetTlsKey())
@@ -113,8 +117,8 @@ func main() {
 		Certificates: []tls.Certificate{serverTLSCert},
 	}
 
-	port := 8090
-	addr := fmt.Sprintf(":%d", port)
+	port := env.GetPort()
+	addr := fmt.Sprintf(":%s", port)
 
 	worldDir := env.GetWorldDir()
 	backupDir := env.GetBackupDir()
@@ -139,7 +143,7 @@ func main() {
 	}
 	defer server.Close()
 
-	log.Printf("Listen on port %d", port)
+	log.Printf("Listen on port %s", port)
 	server.ListenAndServeTLS("", "")
 	http.ListenAndServe(addr, nil)
 }
