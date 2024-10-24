@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -55,8 +56,10 @@ func VerifyToken(secretKey []byte, tokenString string) error {
 }
 
 type User struct {
-	Username string
-	Password string
+	// Non-empty, only letters/numbers, len > 8 and len < 16
+	Username string `validate:"required,alphanum,min=4,max=15"`
+	// Non-empty, len > 8 and len < 16
+	Password string `validate:"required,min=8,max=15"`
 }
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -65,6 +68,28 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var u User
 	json.NewDecoder(r.Body).Decode(&u)
 	log.Printf("User %s attempt to login", u.Username)
+
+	// validate username and password
+	validate := validator.New()
+	err := validate.Struct(u)
+	if err != nil {
+		var errMsg string
+		if len(u.Username) < 4 || len(u.Username) > 15 {
+			errMsg = "Username length must be between 4 and 16"
+		} else if len(u.Password) < 8 || len(u.Password) > 15 {
+			errMsg = "Password length must be between 8 and 16"
+		} else {
+			errMsg = "Username must only contain alphanumeric characters"
+		}
+
+		for _, err := range err.(validator.ValidationErrors) {
+			validErr := fmt.Sprintf("Validation failed on field '%s', condition: '%s'\n", err.Field(), err.Tag())
+			log.Printf(validErr)
+		}
+		log.Println(errMsg)
+		http.Error(w, errMsg, http.StatusInternalServerError)
+		return
+	}
 
 	match, err := db.CheckCredentials(u.Username, u.Password)
 	if err != nil {
