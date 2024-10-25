@@ -46,6 +46,18 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// Check for "stop" inside command
+// e.g. "list stop"
+func isStopCommand(command string) bool {
+	tokens := strings.Split(command, " ")
+	for _, t := range tokens {
+		if t == "stop" {
+			return false
+		}
+	}
+	return true
+}
+
 // protected
 func commandHandler(w http.ResponseWriter, r *http.Request) {
 	var cmd Command
@@ -57,9 +69,15 @@ func commandHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	withoutPrefix, found := strings.CutPrefix(cmd.Command, "!")
+	_, found := strings.CutPrefix(cmd.Command, "!")
 	if found {
-		fmt.Fprintf(w, fmt.Sprintf("%s not implemented yet...", withoutPrefix))
+		log.Printf("Attempt to run task on command endpoint")
+		http.Error(w, "You can't run tasks", http.StatusUnauthorized)
+		return
+	}
+
+	if !isStopCommand(cmd.Command) {
+		http.Error(w, "Use !stop instead", http.StatusUnauthorized)
 		return
 	}
 	fmt.Fprintf(w, app.AskRconServer(cmd.Command))
@@ -106,7 +124,7 @@ func main() {
 	db.SetupDatabase()
 
 	if status, _ := backup.SystemdStatus(); status != backup.Active {
-		log.Fatalf("Minecraft service not running")
+		log.Printf("WARNING: Minecraft service not running")
 	}
 
 	serverTLSCert, err := tls.LoadX509KeyPair(env.GetTlsCert(), env.GetTlsKey())
@@ -131,7 +149,7 @@ func main() {
 	mux.HandleFunc("/backup", authMiddleware(backup.MakeBackupHandler))
 	mux.HandleFunc("/backups", authMiddleware(backup.BackupHandler))
 	mux.HandleFunc("/restore", authMiddleware(backup.RestoreHandler))
-	// mux.HandleFunc("/restore", backup.RestoreHandler)
+	mux.HandleFunc("/task", authMiddleware(backup.TaskHandler))
 
 	// Public routes
 	mux.HandleFunc("/login", app.LoginHandler)
