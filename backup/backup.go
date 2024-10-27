@@ -89,6 +89,7 @@ func MakeBackupHandler(w http.ResponseWriter, r *http.Request) {
 func BackupHandler(w http.ResponseWriter, r *http.Request) {
 	backups, err := Dirs.LoadBackups()
 	if err != nil {
+		log.Errorf("Error listing backups: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -111,12 +112,12 @@ func (d directories) LoadBackups() ([]Backup, error) {
 
 	files, err := os.ReadDir(d.manual)
 	if err != nil {
-		return nil, err
+        return nil, fmt.Errorf("error reading dir content: %w", err)
 	}
 
 	for _, file := range files {
 		if file.IsDir() {
-			continue
+			log.Error("Found directory in backups folder", "dirname", file.Name())
 		}
 
 		name := file.Name()
@@ -124,9 +125,11 @@ func (d directories) LoadBackups() ([]Backup, error) {
 			timestamp := name[len("backup-") : len(name)-len(".zip")] // extract time part
 			t, err := time.Parse("2006-01-02-15-04-05", timestamp)
 			if err != nil {
-				continue // skip invalid formats
+                log.Errorf("Error parsing time: %v", err)
 			}
 			backups = append(backups, Backup{Time: t, Name: name})
+		} else {
+			log.Error("File in backups dir with bad naming", "filename", file.Name())
 		}
 	}
 
