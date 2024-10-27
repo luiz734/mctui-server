@@ -1,7 +1,7 @@
 package env
 
 import (
-	"log"
+	"github.com/charmbracelet/log"
 	"os"
 )
 

@@ -3,7 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"log"
+	"github.com/charmbracelet/log"
 	env "mctui-server/environment"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -27,7 +27,7 @@ func SetupDatabase() error {
 	if err := initDB(); err != nil {
 		return fmt.Errorf("can't init database: %w", err)
 	}
-	log.Printf("Database initialized")
+	log.Info("Database initialized")
 
 	return nil
 }
@@ -47,18 +47,18 @@ func CheckCredentials(username, password string) (bool, error) {
 	err = db.QueryRow(query, username).Scan(&hashedPassword)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("Username %s not found", username)
+			log.Debug("Username %s not found", username)
 			return false, nil
 		}
-		log.Printf("Unknown error: %v", err)
+		log.Error("Unknown error: %v", err)
 		return false, err
 	}
 
 	if checkPassword(password, hashedPassword) {
-		log.Printf("Credentials of user %s match", username)
+		log.Debug("Credentials of user %s match", username)
 		return true, nil
 	}
-	log.Printf("Invalid password for user %s", username)
+	log.Debug("Invalid password for user %s", username)
 
 	return false, nil
 }
@@ -66,7 +66,7 @@ func CheckCredentials(username, password string) (bool, error) {
 func initDB() error {
 	db, err := sql.Open("sqlite3", env.GetDatabaseFile())
 	if err != nil {
-		log.Printf("Missing database file. It will be created")
+		log.Info("Missing database file. It will be created")
 		// log.Fatalf("Can't open database file")
 		// return err
 	}
@@ -109,7 +109,7 @@ func AddUser(username, password string) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("User added successfully")
+	log.Info("User added successfully")
 	return nil
 }
 

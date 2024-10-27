@@ -3,7 +3,7 @@ package backup
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"github.com/charmbracelet/log"
 	// "mctui-server/app"
 	"net/http"
 	"os"
@@ -61,22 +61,22 @@ func (d directories) MakeBackup() error {
 	if err != nil { /* success */
 		panic(err)
 	}
-	log.Printf("copied %s to %s", worldPath, backupPath)
+	log.Debug("Copied %s to %s", worldPath, backupPath)
 
 	// Compress
 	err = archiver.Archive([]string{backupPath}, zipPath)
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("compressed file %s", zipPath)
+	log.Debug("Compressed file %s", zipPath)
 
 	// Remove the uncompressed dir
 	err = os.RemoveAll(backupPath)
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("removing dir %s", backupPath)
-	log.Printf("backup complete")
+	log.Debug("Removing dir %s", backupPath)
+	log.Debug("Backup complete")
 
 	return nil
 }

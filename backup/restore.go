@@ -3,7 +3,7 @@ package backup
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"github.com/charmbracelet/log"
 	"mctui-server/app"
 	"net/http"
 	"os"
@@ -30,7 +30,7 @@ func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if server running
 	if !serverRunning() {
 		errMsg := fmt.Sprintf("Minecraft server not running")
-		log.Printf(errMsg)
+		log.Error(errMsg)
 		http.Error(w, errMsg, http.StatusBadRequest)
 		return
 	}
@@ -38,7 +38,7 @@ func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if server is empty
 	if !serverEmpty() {
 		errMsg := fmt.Sprintf("Minecraft server not empty")
-		log.Printf(errMsg)
+		log.Error(errMsg)
 		http.Error(w, errMsg, http.StatusBadRequest)
 		return
 	}
@@ -47,8 +47,8 @@ func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 	systemdStop()
 	// Restore the backup
 	if err = restoreBackup(rr.Filename); err != nil {
-		log.Printf("Error restoring backup: %v", err)
-		log.Printf("User IP: %s", r.RemoteAddr)
+		log.Error("Error restoring backup: %v", err)
+		log.Error("User IP: %s", r.RemoteAddr)
 		http.Error(w, "Forbidden action. IP logged.", http.StatusForbidden)
 		defer systemdStart()
 		return
@@ -128,7 +128,7 @@ func restoreBackup(backupName string) error {
 	// Check for directory traversal
 	// E.g filename like ../../../something
 	absPath, err := filepath.Abs(backupBeforePath)
-	log.Printf("%s %s", absPath, Dirs.manual)
+	// log.Printf("%s %s", absPath, Dirs.manual)
 	if !strings.HasPrefix(absPath, Dirs.manual) {
 		return &badFilenameError{"directory traversal attempt detected!"}
 	}
@@ -140,7 +140,7 @@ func restoreBackup(backupName string) error {
 		if err != nil {
 			panic(err)
 		}
-		log.Printf("Removed file %s", backupAfterPath)
+		log.Debugf("Removed file %s", backupAfterPath)
 	}
 
 	// Unarchive the backup in the saves dir
@@ -148,7 +148,7 @@ func restoreBackup(backupName string) error {
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("Unarchived file %s to %s", backupBeforePath, serverRootPath)
+	log.Debugf("Unarchived file %s to %s", backupBeforePath, serverRootPath)
 
 	// Remove any dir called "old" in saves dir
 	// Workaround until debug (see bellow)
@@ -157,7 +157,7 @@ func restoreBackup(backupName string) error {
 		if err != nil {
 			panic(err)
 		}
-		log.Printf("Remove file %s", oldSavePath)
+		log.Debugf("Remove file %s", oldSavePath)
 	}
 
 	// Rename "world" to "old"
@@ -165,7 +165,7 @@ func restoreBackup(backupName string) error {
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("Renamed %s to %s", currentSavePath, oldSavePath)
+	log.Debugf("Renamed %s to %s", currentSavePath, oldSavePath)
 
 	// Rename brand new backup to "world"
 	// err = cp.Copy(backupBeforePath, currentSavePath, opts)
@@ -173,11 +173,11 @@ func restoreBackup(backupName string) error {
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("Renamed %s to %s", backupAfterPath, currentSavePath)
+	log.Debugf("Renamed %s to %s", backupAfterPath, currentSavePath)
 
 	// We don't remove "old"
 	// Can be usefull to undo the last backup
-	log.Printf("Restore completed")
+	log.Info("Restore completed")
 
 	return nil
 }

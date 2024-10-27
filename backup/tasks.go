@@ -3,7 +3,7 @@ package backup
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"github.com/charmbracelet/log"
 	"net/http"
 )
 
@@ -16,11 +16,11 @@ func TaskHandler(w http.ResponseWriter, r *http.Request) {
 	var t taskJson
 	err = json.NewDecoder(r.Body).Decode(&t)
 	if err != nil {
-		log.Printf("Can't parse json: %v", err)
+		log.Errorf("Can't parse json: %v", err)
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
-	log.Printf("Got task: %s", t.TaskName)
+	log.Infof("Got task: %s", t.TaskName)
 	task := t.TaskName
 	switch task {
 	case "start":
@@ -31,7 +31,7 @@ func TaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	default:
 		errMsg := fmt.Sprintf("Unknown task %s", task)
-		log.Printf(errMsg)
+		log.Infof(errMsg)
 		http.Error(w, errMsg, http.StatusInternalServerError)
 		return
 	}
@@ -44,18 +44,19 @@ func StartHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Check errors on checking status
 	if state, err = SystemdStatus(); err != nil {
-		log.Printf("Can't get minecraft server status: %v", err)
+		log.Errorf("Can't get minecraft server status: %v", err)
 		http.Error(w, "Something wrong. Check the server logs", http.StatusInternalServerError)
 		return
 	}
 	// Check server is already running
 	if state == Active {
 		errMsg := fmt.Sprintf("Server already running")
+        log.Infof(errMsg)
 		http.Error(w, errMsg, http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("Server will start")
+	log.Infof("Server will start")
 	systemdStart()
 	w.Write([]byte("Server started"))
 }
@@ -67,7 +68,7 @@ func StopHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Check errors on checking status
 	if state, err = SystemdStatus(); err != nil {
-		log.Printf("Can't get minecraft server status: %v", err)
+		log.Errorf("Can't get minecraft server status: %v", err)
 		http.Error(w, "Something wrong. Check the server logs", http.StatusInternalServerError)
 		return
 	}
@@ -78,7 +79,7 @@ func StopHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Server will stop")
+	log.Info("Server will stop")
 	systemdStop()
 	w.Write([]byte("Server stopped"))
 }

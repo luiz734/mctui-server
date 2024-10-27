@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"mctui-server/app"
 	"mctui-server/backup"
 	"mctui-server/db"
@@ -14,6 +13,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/charmbracelet/log"
 
 	"github.com/alecthomas/kong"
 )
@@ -62,6 +63,8 @@ func isStopCommand(command string) bool {
 func commandHandler(w http.ResponseWriter, r *http.Request) {
 	var cmd Command
 	var err error
+	w.Header().Set("Content-Type", "application/json")
+
 	// Decode the JSON body
 	err = json.NewDecoder(r.Body).Decode(&cmd)
 	if err != nil {
@@ -80,18 +83,28 @@ func commandHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Use !stop instead", http.StatusUnauthorized)
 		return
 	}
+	// Same as w.Write
 	fmt.Fprintf(w, app.AskRconServer(cmd.Command))
 }
 
 func setupLogs() *os.File {
 	var f *os.File
 	var err error
+	logger := log.NewWithOptions(os.Stderr, log.Options{
+		ReportTimestamp: false,
+		ReportCaller:    true,
+        Level: log.DebugLevel,
+	})
+	log.SetDefault(logger)
+
 	if len(os.Getenv("DEBUG")) > 0 {
 		f, err = os.OpenFile("debug.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
 			log.Fatalf("error opening file: %v", err)
 		}
-
+		// Timestamp only on file
+		log.SetReportTimestamp(true)
+		log.SetReportCaller(false)
 		log.SetOutput(f)
 		log.Printf("Set log output to file %s", "debug.log")
 	} else {
@@ -124,7 +137,7 @@ func main() {
 	db.SetupDatabase()
 
 	if status, _ := backup.SystemdStatus(); status != backup.Active {
-		log.Printf("WARNING: Minecraft service not running")
+		log.Warn("Minecraft service not running")
 	}
 
 	serverTLSCert, err := tls.LoadX509KeyPair(env.GetTlsCert(), env.GetTlsKey())
@@ -161,7 +174,7 @@ func main() {
 	}
 	defer server.Close()
 
-	log.Printf("Listen on port %s", port)
+	log.Infof("Listen on port %s", port)
 	server.ListenAndServeTLS("", "")
 	http.ListenAndServe(addr, nil)
 }
@@ -192,7 +205,7 @@ func processSubcommands() (processed bool) {
 	// Without any arg
 	// Also matches "dumb"
 	default:
-		log.Printf("No subcommand found")
+		log.Info("No subcommand found")
 	}
 	return false
 }

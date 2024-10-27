@@ -3,7 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"github.com/charmbracelet/log"
 	"mctui-server/db"
 	env "mctui-server/environment"
 	"net/http"
@@ -46,7 +46,7 @@ func VerifyToken(secretKey []byte, tokenString string) error {
 	// Extract claims if token is valid
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		if username, ok := claims["username"].(string); ok {
-			log.Printf("Authenticated user %s using jwt", username)
+			log.Debugf("Authenticated user %s using jwt", username)
 			return nil
 		}
 		return fmt.Errorf("Missing claims")
@@ -67,7 +67,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	var u User
 	json.NewDecoder(r.Body).Decode(&u)
-	log.Printf("User %s attempt to login", u.Username)
+	log.Debug("User %s attempt to login", u.Username)
 
 	// validate username and password
 	validate := validator.New()
@@ -86,14 +86,14 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			validErr := fmt.Sprintf("Validation failed on field '%s', condition: '%s'\n", err.Field(), err.Tag())
 			log.Printf(validErr)
 		}
-		log.Println(errMsg)
+		log.Printf(errMsg)
 		http.Error(w, errMsg, http.StatusInternalServerError)
 		return
 	}
 
 	match, err := db.CheckCredentials(u.Username, u.Password)
 	if err != nil {
-		log.Panicf("%v", err)
+		log.Fatalf("%v", err)
 	}
 	if match {
 		// if u.Username == "admin" && u.Password == "1234" {
@@ -112,5 +112,5 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusUnauthorized)
 	fmt.Fprint(w, "Invalid credentials")
-	log.Printf("Invalid credentials for user %s", u.Username)
+	log.Debug("Invalid credentials for user %s", u.Username)
 }

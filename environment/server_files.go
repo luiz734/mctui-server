@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io/fs"
-	"log"
+    "github.com/charmbracelet/log"
 	"os"
 	"path"
 	"strings"
@@ -139,9 +139,9 @@ func checkServerProperties() error {
 	// Check server ip
 	cfgServerIp := cfg.Section("").Key("server-ip").String()
 	if cfgServerIp == "" {
-		log.Printf("WARNING: server-ip not set")
-        log.Printf("The server will only be visible in you local network")
-        log.Printf("To make it avaliable set it to 0.0.0.0")
+		log.Warn("server-ip not set", "server-ip",cfgServerIp)
+        log.Warn("The server will only be visible in you local network")
+        log.Warn("To make it avaliable set it to 0.0.0.0")
 	}
 
 	return nil

@@ -3,7 +3,7 @@ package backup
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/charmbracelet/log"
 	"time"
 
 	"github.com/coreos/go-systemd/v22/dbus"
@@ -24,7 +24,7 @@ func systemdStart() {
 		log.Fatalf("failed to connect to systemd: %v", err)
 	}
 	defer conn.Close()
-	log.Printf("Connected to dbus")
+	log.Info("Connected to dbus")
 
 	// Stop the service
 	service := "minecraft.service"
@@ -32,14 +32,14 @@ func systemdStart() {
 	if err != nil {
 		log.Fatalf("failed to start service: %v", err)
 	}
-	log.Printf("Start result: %d", stopRes)
+	log.Debugf("Start result: %d", stopRes)
 
 	// Wait for the service to reach the "active" state (it should be active after a successful restart)
 	targetState := "active"
 	if err := waitForServiceState(conn, service, targetState); err != nil {
 		log.Fatalf("error waiting for service to become active: %v", err)
 	}
-	log.Printf("Service has started successfully and is now active")
+	log.Info("minecraft.service has started successfully and is now active")
 
 }
 
@@ -50,7 +50,7 @@ func systemdStop() {
 		log.Fatalf("failed to connect to systemd: %v", err)
 	}
 	defer conn.Close()
-	log.Printf("Connected to dbus")
+	log.Info("Connected to dbus")
 
 	// Stop the service
 	service := "minecraft.service"
@@ -58,14 +58,14 @@ func systemdStop() {
 	if err != nil {
 		log.Fatalf("failed to stop service: %v", err)
 	}
-	log.Printf("Stop result: %d", stopRes)
+	log.Debugf("Stop result: %d", stopRes)
 
 	// Wait for the service to reach the "active" state (it should be active after a successful restart)
 	targetState := "inactive"
 	if err := waitForServiceState(conn, service, targetState); err != nil {
 		log.Fatalf("Error waiting for service to become active: %v", err)
 	}
-	log.Printf("Service has restarted successfully and is now inactive")
+	log.Info("minecraft.service has restarted successfully and is now inactive")
 }
 
 func SystemdStatus() (ServiceState, error) {
@@ -75,7 +75,7 @@ func SystemdStatus() (ServiceState, error) {
 		log.Fatalf("Failed to connect to systemd: %v", err)
 	}
 	defer conn.Close()
-	log.Printf("Connected to dbus")
+	log.Info("Connected to dbus")
 
 	service := "minecraft.service"
 	props, err := conn.GetUnitPropertiesContext(context, service)
