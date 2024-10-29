@@ -46,6 +46,7 @@ func NewDirectories(savesPath, manualPath string) directories {
 }
 
 func (d directories) MakeBackup() error {
+    // Always good to use utc date
 	now := time.Now().UTC().Format("2006-01-02-15-04-05")
 	dirName := fmt.Sprintf("backup-%s", now)
 	zipName := fmt.Sprintf("%s.zip", dirName)

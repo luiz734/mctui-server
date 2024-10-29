@@ -93,7 +93,7 @@ func setupLogs() *os.File {
 	logger := log.NewWithOptions(os.Stderr, log.Options{
 		ReportTimestamp: false,
 		ReportCaller:    true,
-        Level: log.DebugLevel,
+		Level:           log.DebugLevel,
 	})
 	log.SetDefault(logger)
 
@@ -122,7 +122,10 @@ func main() {
 	// Check if there are missing environment variables
 	env.CheckRequiredVariables()
 
+	// env.CheckAll()
+
 	// Quit if a subcommand exists
+	// return
 	if processSubcommands() {
 		return
 	}
